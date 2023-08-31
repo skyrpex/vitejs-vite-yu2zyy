@@ -6,18 +6,18 @@ import {
   useRef,
   PropsWithChildren,
   MutableRefObject,
+  SetStateAction,
+  Dispatch,
 } from 'react';
 
 const PersistentState = createContext<{
   state: MutableRefObject<any[]>;
-  // setState()
 }>(undefined!);
 const PersistentStateConsumer = createContext<{
   index: MutableRefObject<number>;
 }>(undefined!);
 
 export const PersistentStateProvider = (props: PropsWithChildren) => {
-  // const [state, setState] = useState(() => []);
   const state = useRef([]);
   return (
     <PersistentState.Provider value={{ state }}>
@@ -28,7 +28,6 @@ export const PersistentStateProvider = (props: PropsWithChildren) => {
 
 export function PersistentStateConsumerProvider(props: PropsWithChildren) {
   const index = useRef(0);
-  // index.current = 0;
   useEffect(() => {
     index.current = 0;
   }, []);
@@ -39,25 +38,19 @@ export function PersistentStateConsumerProvider(props: PropsWithChildren) {
   );
 }
 
-export function usePersistentState<T>(initialValue: T) {
+export function usePersistentState<S>(
+  initialValue: S
+): [S, Dispatch<SetStateAction<S>>] {
   const { state: contextState } = useContext(PersistentState)!;
   const { index: contextIndex } = useContext(PersistentStateConsumer)!;
   const [index, setIndex] = useState(-1);
-  const [otherIndex] = useState(() => {
-    return contextIndex.current + 1;
-  });
-  useEffect(() => {
-    console.log({ otherIndex });
-  }, [otherIndex]);
-  // const states = useContext(PersistentState);
-  // const state = states[currentIndex];
-  // const setState = useCallback((value) => {});
-  // return [states[currentIndex]];
   const [state, setState] = useState(initialValue);
   useEffect(() => {
     const newIndex = contextIndex!.current++;
     setIndex(newIndex);
-    setState(contextState.current[newIndex] ?? initialValue);
+    if (contextState.current.length > newIndex) {
+      setState(contextState.current[newIndex]);
+    }
   }, []);
   useEffect(() => {
     return () => {
